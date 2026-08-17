@@ -1,6 +1,6 @@
 import { DZIKIR_PAGI_LIST, DZIKIR_PETANG_LIST, DOA_HARIAN_LIST } from '../../../backend/src/modules/dzikir/dzikir.data';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1';
 
 export const apiService = {
   // 1. Health
