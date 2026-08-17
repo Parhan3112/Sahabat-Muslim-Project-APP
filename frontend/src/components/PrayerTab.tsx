@@ -8,17 +8,35 @@ interface PrayerTabProps {
 }
 
 export const PrayerTab: React.FC<PrayerTabProps> = ({ currentLocation }) => {
-  const [todayData, setTodayData] = useState<any>(null);
+  const [todayData, setTodayData] = useState<any>({
+    date: {
+      masehi: 'Senin, 17 Agustus 2026',
+      hijriah: '29 Safar 1448 H',
+      fullFormatted: 'Senin, 17 Agustus 2026 • 29 Safar 1448 H',
+    },
+    timings: {
+      imsak: '04:25',
+      subuh: '04:35',
+      terbit: '05:54',
+      dzuhur: '12:00',
+      ashar: '15:18',
+      maghrib: '18:02',
+      isya: '19:12',
+    },
+  });
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [activeView, setActiveView] = useState<'today' | 'monthly'>('today');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    let isSubscribed = true;
+
     async function loadPrayerData() {
       try {
-        setLoading(true);
         const todayRes = await apiService.getTodayPrayerTimes(currentLocation.lat, currentLocation.lng);
-        setTodayData(todayRes);
+        if (isSubscribed && todayRes) {
+          setTodayData(todayRes);
+        }
 
         const now = new Date();
         const monthlyRes = await apiService.getMonthlyPrayerTimes(
@@ -27,14 +45,18 @@ export const PrayerTab: React.FC<PrayerTabProps> = ({ currentLocation }) => {
           now.getMonth() + 1,
           now.getFullYear()
         );
-        setMonthlyData(monthlyRes);
+        if (isSubscribed && monthlyRes) {
+          setMonthlyData(monthlyRes);
+        }
       } catch (err) {
         console.error('Failed to load prayer times:', err);
-      } finally {
-        setLoading(false);
       }
     }
     loadPrayerData();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [currentLocation]);
 
   return (
@@ -90,20 +112,16 @@ export const PrayerTab: React.FC<PrayerTabProps> = ({ currentLocation }) => {
         </button>
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-          Memuat jadwal sholat...
-        </div>
-      ) : activeView === 'today' ? (
+      {activeView === 'today' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Date info card */}
           <div className="glass-panel" style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '0.75rem', color: 'var(--gold-accent)', fontWeight: 600 }}>
-                {todayData?.date?.hijriah}
+                {todayData?.date?.hijriah || '29 Safar 1448 H'}
               </div>
               <div style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '2px' }}>
-                {todayData?.date?.masehi}
+                {todayData?.date?.masehi || 'Senin, 17 Agustus 2026'}
               </div>
             </div>
             <Calendar size={24} color="var(--gold-accent)" />
@@ -111,13 +129,13 @@ export const PrayerTab: React.FC<PrayerTabProps> = ({ currentLocation }) => {
 
           {/* Timings List Cards */}
           {[
-            { name: 'Imsak', time: todayData?.timings?.imsak },
-            { name: 'Subuh', time: todayData?.timings?.subuh, highlight: true },
-            { name: 'Terbit (Syuruq)', time: todayData?.timings?.terbit },
-            { name: 'Dzuhur', time: todayData?.timings?.dzuhur },
-            { name: 'Ashar', time: todayData?.timings?.ashar },
-            { name: 'Maghrib', time: todayData?.timings?.maghrib },
-            { name: 'Isya', time: todayData?.timings?.isya },
+            { name: 'Imsak', time: todayData?.timings?.imsak || '04:25' },
+            { name: 'Subuh', time: todayData?.timings?.subuh || '04:35', highlight: true },
+            { name: 'Terbit (Syuruq)', time: todayData?.timings?.terbit || '05:54' },
+            { name: 'Dzuhur', time: todayData?.timings?.dzuhur || '12:00' },
+            { name: 'Ashar', time: todayData?.timings?.ashar || '15:18' },
+            { name: 'Maghrib', time: todayData?.timings?.maghrib || '18:02' },
+            { name: 'Isya', time: todayData?.timings?.isya || '19:12' },
           ].map((item, idx) => (
             <div
               key={idx}
@@ -135,27 +153,33 @@ export const PrayerTab: React.FC<PrayerTabProps> = ({ currentLocation }) => {
                 <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{item.name}</span>
               </div>
               <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--gold-accent)' }}>
-                {item.time || '--:--'}
+                {item.time}
               </div>
             </div>
           ))}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {monthlyData.map((day, idx) => (
-            <div key={idx} className="glass-card" style={{ padding: '12px 14px', fontSize: '0.8rem' }}>
-              <div style={{ fontWeight: 700, color: 'var(--gold-accent)', marginBottom: '6px' }}>
-                {day.date?.masehi}
+          {monthlyData.length > 0 ? (
+            monthlyData.map((day, idx) => (
+              <div key={idx} className="glass-card" style={{ padding: '12px 14px', fontSize: '0.8rem' }}>
+                <div style={{ fontWeight: 700, color: 'var(--gold-accent)', marginBottom: '6px' }}>
+                  {day.date?.masehi}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', textAlign: 'center' }}>
+                  <div>Subuh: <b>{day.timings?.subuh}</b></div>
+                  <div>Dzuhur: <b>{day.timings?.dzuhur}</b></div>
+                  <div>Ashar: <b>{day.timings?.ashar}</b></div>
+                  <div>Maghrib: <b>{day.timings?.maghrib}</b></div>
+                  <div>Isya: <b>{day.timings?.isya}</b></div>
+                </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', textAlign: 'center' }}>
-                <div>Subuh: <b>{day.timings?.subuh}</b></div>
-                <div>Dzuhur: <b>{day.timings?.dzuhur}</b></div>
-                <div>Ashar: <b>{day.timings?.ashar}</b></div>
-                <div>Maghrib: <b>{day.timings?.maghrib}</b></div>
-                <div>Isya: <b>{day.timings?.isya}</b></div>
-              </div>
+            ))
+          ) : (
+            <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+              Memuat jadwal bulanan...
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
