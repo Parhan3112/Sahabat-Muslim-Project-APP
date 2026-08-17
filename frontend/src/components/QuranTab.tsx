@@ -13,6 +13,21 @@ interface QuranTabProps {
   onMarkLastRead: (surahNum: number, verseNum: number, surahName: string, totalSurahVerses: number) => void;
 }
 
+const INITIAL_SURAHS = [
+  { number: 1, nameLatin: 'Al-Fatihah', nameArabic: 'الفاتحة', numberOfVerses: 7, translation: 'Pembukaan' },
+  { number: 2, nameLatin: 'Al-Baqarah', nameArabic: 'البقرة', numberOfVerses: 286, translation: 'Sapi Betina' },
+  { number: 3, nameLatin: 'Ali \'Imran', nameArabic: 'آل عمران', numberOfVerses: 200, translation: 'Keluarga Imran' },
+  { number: 4, nameLatin: 'An-Nisa\'', nameArabic: 'النساء', numberOfVerses: 176, translation: 'Wanita' },
+  { number: 18, nameLatin: 'Al-Kahf', nameArabic: 'الكهف', numberOfVerses: 110, translation: 'Gua' },
+  { number: 36, nameLatin: 'Yasin', nameArabic: 'يس', numberOfVerses: 83, translation: 'Yasin' },
+  { number: 55, nameLatin: 'Ar-Rahman', nameArabic: 'الرحمن', numberOfVerses: 78, translation: 'Yang Maha Pemurah' },
+  { number: 56, nameLatin: 'Al-Waqi\'ah', nameArabic: 'الواقعة', numberOfVerses: 96, translation: 'Hari Kiamat' },
+  { number: 67, nameLatin: 'Al-Mulk', nameArabic: 'الملك', numberOfVerses: 30, translation: 'Kerajaan' },
+  { number: 112, nameLatin: 'Al-Ikhlas', nameArabic: 'الإخلاص', numberOfVerses: 4, translation: 'Ikhlas' },
+  { number: 113, nameLatin: 'Al-Falaq', nameArabic: 'الفلق', numberOfVerses: 5, translation: 'Waktu Subuh' },
+  { number: 114, nameLatin: 'An-Nas', nameArabic: 'الناس', numberOfVerses: 6, translation: 'Manusia' },
+];
+
 export const QuranTab: React.FC<QuranTabProps> = ({
   token,
   selectedSurahNum,
@@ -23,9 +38,9 @@ export const QuranTab: React.FC<QuranTabProps> = ({
   lastReadProgress,
   onMarkLastRead,
 }) => {
-  const [surahs, setSurahs] = useState<any[]>([]);
+  const [surahs, setSurahs] = useState<any[]>(INITIAL_SURAHS);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [currentSurahDetail, setCurrentSurahDetail] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
   const [playingVerse, setPlayingVerse] = useState<number | null>(null);
@@ -33,18 +48,21 @@ export const QuranTab: React.FC<QuranTabProps> = ({
 
   // Fetch list of surahs
   useEffect(() => {
+    let isSubscribed = true;
     async function loadSurahs() {
       try {
-        setLoading(true);
         const data = await apiService.getAllSurahs();
-        setSurahs(data);
+        if (isSubscribed && data && data.length > 0) {
+          setSurahs(data);
+        }
       } catch (err) {
         console.error('Failed to load surahs:', err);
-      } finally {
-        setLoading(false);
       }
     }
     loadSurahs();
+    return () => {
+      isSubscribed = false;
+    };
   }, []);
 
   // Fetch selected surah detail when selectedSurahNum changes
@@ -54,18 +72,27 @@ export const QuranTab: React.FC<QuranTabProps> = ({
       return;
     }
 
+    let isSubscribed = true;
     async function loadDetail() {
       try {
         setLoadingDetail(true);
         const data = await apiService.getSurahDetail(selectedSurahNum!);
-        setCurrentSurahDetail(data);
+        if (isSubscribed) {
+          setCurrentSurahDetail(data);
+        }
       } catch (err) {
         console.error('Failed to load surah detail:', err);
       } finally {
-        setLoadingDetail(false);
+        if (isSubscribed) {
+          setLoadingDetail(false);
+        }
       }
     }
     loadDetail();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [selectedSurahNum]);
 
   // Audio player for verses
@@ -90,9 +117,9 @@ export const QuranTab: React.FC<QuranTabProps> = ({
 
   const filteredSurahs = surahs.filter(
     (s) =>
-      s.nameLatin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.number.toString().includes(searchQuery) ||
-      s.translation.toLowerCase().includes(searchQuery.toLowerCase())
+      (s.nameLatin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.number || '').toString().includes(searchQuery) ||
+      (s.translation || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Check if verse is bookmarked
@@ -336,59 +363,53 @@ export const QuranTab: React.FC<QuranTabProps> = ({
       </div>
 
       {/* Surah List Items */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-          Memuat daftar Surah...
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {filteredSurahs.map((surah) => (
-            <div
-              key={surah.number}
-              className="glass-card"
-              onClick={() => onSelectSurah(surah.number)}
-              style={{
-                padding: '14px 16px',
-                cursor: 'pointer',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div
-                  style={{
-                    backgroundColor: 'rgba(212, 175, 55, 0.15)',
-                    color: 'var(--gold-accent)',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1px solid var(--border-color)',
-                  }}
-                >
-                  {surah.number}
-                </div>
-
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{surah.nameLatin}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    {surah.translation} • {surah.numberOfVerses} Ayat
-                  </div>
-                </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {filteredSurahs.map((surah) => (
+          <div
+            key={surah.number}
+            className="glass-card"
+            onClick={() => onSelectSurah(surah.number)}
+            style={{
+              padding: '14px 16px',
+              cursor: 'pointer',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div
+                style={{
+                  backgroundColor: 'rgba(212, 175, 55, 0.15)',
+                  color: 'var(--gold-accent)',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid var(--border-color)',
+                }}
+              >
+                {surah.number}
               </div>
 
-              <div className="font-arabic" style={{ fontSize: '1.3rem', color: 'var(--gold-accent)' }}>
-                {surah.nameArabic}
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{surah.nameLatin}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  {surah.translation} • {surah.numberOfVerses} Ayat
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+
+            <div className="font-arabic" style={{ fontSize: '1.3rem', color: 'var(--gold-accent)' }}>
+              {surah.nameArabic}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

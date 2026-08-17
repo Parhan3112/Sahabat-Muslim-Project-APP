@@ -1,3 +1,5 @@
+import { safeStorage } from '../utils/storage';
+
 export interface LocationInfo {
   name: string;
   lat: number;
@@ -22,24 +24,27 @@ export const INDONESIA_CITIES: LocationInfo[] = [
 const STORAGE_KEY = 'sm_user_location';
 
 export function getSavedLocation(): LocationInfo {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (_e) {
-      // ignore
+  try {
+    const saved = safeStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed.lat === 'number' && typeof parsed.lng === 'number' && parsed.name) {
+        return parsed;
+      }
     }
+  } catch (_e) {
+    // ignore
   }
   return INDONESIA_CITIES[0]; // Default Jakarta
 }
 
 export function saveLocation(location: LocationInfo): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(location));
+  safeStorage.setItem(STORAGE_KEY, JSON.stringify(location));
 }
 
 export function requestGPSLocation(): Promise<LocationInfo> {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
       reject(new Error('Fitur GPS tidak didukung di browser ini.'));
       return;
     }

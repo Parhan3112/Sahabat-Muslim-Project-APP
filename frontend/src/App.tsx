@@ -9,6 +9,7 @@ import { ProfileTab } from './components/ProfileTab';
 import { MosqueModal } from './components/MosqueModal';
 import { apiService } from './services/api';
 import { getSavedLocation, LocationInfo } from './services/locationService';
+import { safeStorage } from './utils/storage';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
@@ -29,7 +30,7 @@ export const App: React.FC = () => {
   // Auth State (with Safe Initializer)
   const [token, setToken] = useState<string | null>(() => {
     try {
-      return localStorage.getItem('sm_token');
+      return safeStorage.getItem('sm_token');
     } catch (_e) {
       return null;
     }
@@ -37,7 +38,7 @@ export const App: React.FC = () => {
 
   const [user, setUser] = useState<any>(() => {
     try {
-      const saved = localStorage.getItem('sm_user');
+      const saved = safeStorage.getItem('sm_user');
       return saved ? JSON.parse(saved) : null;
     } catch (_e) {
       return null;
@@ -47,7 +48,7 @@ export const App: React.FC = () => {
   // Bookmarks State (with Safe Initializer)
   const [bookmarks, setBookmarks] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('sm_bookmarks');
+      const saved = safeStorage.getItem('sm_bookmarks');
       return saved ? JSON.parse(saved) : [];
     } catch (_e) {
       return [];
@@ -76,7 +77,7 @@ export const App: React.FC = () => {
     };
 
     try {
-      const saved = localStorage.getItem('sm_progress');
+      const saved = safeStorage.getItem('sm_progress');
       if (saved) {
         const parsed = JSON.parse(saved);
         return {
@@ -96,7 +97,11 @@ export const App: React.FC = () => {
 
   // Sync Theme to HTML data-theme
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (_e) {
+      // ignore
+    }
   }, [theme]);
 
   // Load Bookmarks & Reading Progress from API when token is present
@@ -106,11 +111,11 @@ export const App: React.FC = () => {
         try {
           const list = await apiService.getBookmarks(token!);
           setBookmarks(list);
-          localStorage.setItem('sm_bookmarks', JSON.stringify(list));
+          safeStorage.setItem('sm_bookmarks', JSON.stringify(list));
 
           const progress = await apiService.getReadingProgress(token!);
           setReadingProgress(progress);
-          localStorage.setItem('sm_progress', JSON.stringify(progress));
+          safeStorage.setItem('sm_progress', JSON.stringify(progress));
         } catch (_err) {
           // ignore
         }
@@ -122,18 +127,18 @@ export const App: React.FC = () => {
   const handleLoginSuccess = (newToken: string, newUser: any) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem('sm_token', newToken);
-    localStorage.setItem('sm_user', JSON.stringify(newUser));
+    safeStorage.setItem('sm_token', newToken);
+    safeStorage.setItem('sm_user', JSON.stringify(newUser));
   };
 
   const handleLogout = () => {
     setToken(null);
     setUser(null);
     setBookmarks([]);
-    localStorage.removeItem('sm_token');
-    localStorage.removeItem('sm_user');
-    localStorage.removeItem('sm_bookmarks');
-    localStorage.removeItem('sm_progress');
+    safeStorage.removeItem('sm_token');
+    safeStorage.removeItem('sm_user');
+    safeStorage.removeItem('sm_bookmarks');
+    safeStorage.removeItem('sm_progress');
   };
 
   const handleMarkLastRead = async (
@@ -162,7 +167,7 @@ export const App: React.FC = () => {
     };
 
     setReadingProgress(updated);
-    localStorage.setItem('sm_progress', JSON.stringify(updated));
+    safeStorage.setItem('sm_progress', JSON.stringify(updated));
 
     if (token) {
       try {
@@ -174,7 +179,7 @@ export const App: React.FC = () => {
           dailyVerseTarget: dailyTarget,
         });
         setReadingProgress(apiUpdated);
-        localStorage.setItem('sm_progress', JSON.stringify(apiUpdated));
+        safeStorage.setItem('sm_progress', JSON.stringify(apiUpdated));
       } catch (_err) {
         // ignore
       }
@@ -197,7 +202,7 @@ export const App: React.FC = () => {
     };
 
     setReadingProgress(updated);
-    localStorage.setItem('sm_progress', JSON.stringify(updated));
+    safeStorage.setItem('sm_progress', JSON.stringify(updated));
 
     if (token) {
       try {
@@ -208,7 +213,7 @@ export const App: React.FC = () => {
           dailyVerseTarget: dailyTarget,
         });
         setReadingProgress(apiUpdated);
-        localStorage.setItem('sm_progress', JSON.stringify(apiUpdated));
+        safeStorage.setItem('sm_progress', JSON.stringify(apiUpdated));
       } catch (_err) {
         // ignore
       }
@@ -225,7 +230,7 @@ export const App: React.FC = () => {
       const itemToDelete = bookmarks[existingIndex];
       const updated = bookmarks.filter((_, idx) => idx !== existingIndex);
       setBookmarks(updated);
-      localStorage.setItem('sm_bookmarks', JSON.stringify(updated));
+      safeStorage.setItem('sm_bookmarks', JSON.stringify(updated));
 
       if (token && itemToDelete.id) {
         try {
@@ -245,7 +250,7 @@ export const App: React.FC = () => {
       };
       const updated = [newBm, ...bookmarks];
       setBookmarks(updated);
-      localStorage.setItem('sm_bookmarks', JSON.stringify(updated));
+      safeStorage.setItem('sm_bookmarks', JSON.stringify(updated));
 
       if (token) {
         try {
@@ -265,7 +270,7 @@ export const App: React.FC = () => {
   const handleDeleteBookmarkById = async (id: string) => {
     const updated = bookmarks.filter((b) => b.id !== id);
     setBookmarks(updated);
-    localStorage.setItem('sm_bookmarks', JSON.stringify(updated));
+    safeStorage.setItem('sm_bookmarks', JSON.stringify(updated));
 
     if (token) {
       try {
