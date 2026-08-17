@@ -30,20 +30,64 @@ export const HomeTab: React.FC<HomeTabProps> = ({
   const [gpsLoading, setGpsLoading] = useState<boolean>(false);
   const [gpsError, setGpsError] = useState<string>('');
 
+  // Live Digital Clock state (HH:mm:ss WIB)
+  const [currentTimeStr, setCurrentTimeStr] = useState<string>('');
+  const [currentDateStr, setCurrentDateStr] = useState<string>('');
+
   const featuredVerse = getDailyFeaturedVerse();
 
-  // Load Prayer Times for current location
+  // 1. Live 1-Second Digital Clock Timer
   useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+
+      // Format HH:mm:ss WIB
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      setCurrentTimeStr(`${hours}:${minutes}:${seconds} WIB`);
+
+      // Format Indonesian Date (e.g. "Senin, 17 Agustus 2026")
+      const DAYS_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const MONTHS_ID = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      const dayName = DAYS_ID[now.getDay()];
+      const dayNum = now.getDate();
+      const monthName = MONTHS_ID[now.getMonth()];
+      const yearNum = now.getFullYear();
+
+      const masehiStr = `${dayName}, ${dayNum} ${monthName} ${yearNum}`;
+      setCurrentDateStr(masehiStr);
+    };
+
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 2. Load Prayer Times for current location
+  useEffect(() => {
+    let isSubscribed = true;
+
     async function loadPrayer() {
       try {
         const res = await apiService.getTodayPrayerTimes(currentLocation.lat, currentLocation.lng);
-        setTodayPrayer(res);
-        determineNextPrayer(res.timings);
+        if (isSubscribed) {
+          setTodayPrayer(res);
+          determineNextPrayer(res.timings);
+        }
       } catch (err) {
         console.error('Failed to load today prayer times:', err);
       }
     }
+
     loadPrayer();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [currentLocation]);
 
   const determineNextPrayer = (timings: any) => {
@@ -52,6 +96,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     const parseTime = (timeStr: string) => {
+      if (!timeStr) return 0;
       const [h, m] = timeStr.split(':').map(Number);
       return h * 60 + m;
     };
@@ -73,7 +118,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
     }
 
     setNextPrayerName('Subuh (Besok)');
-    setNextPrayerTime(timings.subuh);
+    setNextPrayerTime(timings.subuh || '04:35');
   };
 
   const toggleFeaturedAudio = (e: React.MouseEvent) => {
@@ -119,16 +164,19 @@ export const HomeTab: React.FC<HomeTabProps> = ({
     }
   };
 
+  const displayDateHeader = todayPrayer?.date?.fullFormatted ||
+    (todayPrayer?.date?.hijriah ? `${currentDateStr} • ${todayPrayer.date.hijriah}` : currentDateStr);
+
   return (
     <div style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Top Header with Live Realtime Date */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--gold-accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Calendar size={13} />
-            <span>{todayPrayer?.date?.fullFormatted || todayPrayer?.date?.hijriah || 'Memuat Kalender...'}</span>
+          <div style={{ fontSize: '0.78rem', color: 'var(--gold-accent)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Calendar size={14} />
+            <span>{displayDateHeader}</span>
           </div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>
+          <h1 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '4px' }}>
             Sahabat Muslim 🌙
           </h1>
         </div>
@@ -155,33 +203,89 @@ export const HomeTab: React.FC<HomeTabProps> = ({
         </button>
       </div>
 
-      {/* Hero Next Prayer Countdown Card */}
+      {/* Hero Card with Live Digital Clock & Next Prayer */}
       <div
         className="glass-panel"
         style={{
           padding: '24px 20px',
-          background: 'linear-gradient(135deg, rgba(15, 81, 50, 0.9) 0%, rgba(5, 46, 22, 0.95) 100%)',
-          border: '1px solid var(--border-color)',
+          background: 'linear-gradient(135deg, rgba(15, 81, 50, 0.95) 0%, rgba(5, 46, 22, 0.98) 100%)',
+          border: '1px solid var(--gold-accent)',
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
           position: 'relative',
           overflow: 'hidden',
+          borderRadius: '20px',
         }}
       >
         <div style={{ position: 'relative', zIndex: 2 }}>
-          <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--gold-accent)', fontWeight: 700 }}>
-            Sholat Berikutnya
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1.2px', color: 'var(--gold-accent)', fontWeight: 800 }}>
+              Jadwal Sholat & Waktu Realtime ⏱️
+            </span>
+            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff', backgroundColor: 'rgba(212, 175, 55, 0.25)', padding: '4px 10px', borderRadius: '12px', border: '1px solid var(--gold-accent)' }}>
+              {currentTimeStr || 'Memuat Jam...'}
+            </div>
           </div>
-          <div style={{ fontSize: '2.2rem', fontWeight: 800, margin: '4px 0', color: '#ffffff' }}>
-            {nextPrayerName} • {nextPrayerTime}
+
+          <div style={{ fontSize: '2.2rem', fontWeight: 800, margin: '10px 0 6px 0', color: '#ffffff' }}>
+            {nextPrayerName} • <span style={{ color: 'var(--gold-accent)' }}>{nextPrayerTime}</span>
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.8)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+          <div style={{ fontSize: '0.82rem', color: 'rgba(255, 255, 255, 0.85)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Clock size={14} color="var(--gold-accent)" />
-            <span>{currentLocation.name}</span>
+            <span>Lokasi: {currentLocation.name} (Kemenag RI)</span>
           </div>
         </div>
       </div>
 
-      {/* Ayat Pilihan Hari Ini (Daily Rotating Verse Card) */}
+      {/* Full 5-Prayer Timetable Grid Card (Sleek & Immediate) */}
+      <div className="glass-panel" style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gold-accent)' }}>
+            🕌 Jadwal Sholat Hari Ini
+          </span>
+          <button
+            onClick={() => onNavigate('prayer')}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
+          >
+            <span>Lengkap</span>
+            <ChevronRight size={13} />
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+          {[
+            { name: 'Subuh', time: todayPrayer?.timings?.subuh || '04:35' },
+            { name: 'Dzuhur', time: todayPrayer?.timings?.dzuhur || '12:00' },
+            { name: 'Ashar', time: todayPrayer?.timings?.ashar || '15:15' },
+            { name: 'Maghrib', time: todayPrayer?.timings?.maghrib || '18:05' },
+            { name: 'Isya', time: todayPrayer?.timings?.isya || '19:15' },
+          ].map((item) => {
+            const isNext = item.name === nextPrayerName || (nextPrayerName.startsWith('Subuh') && item.name === 'Subuh');
+            return (
+              <div
+                key={item.name}
+                style={{
+                  padding: '10px 4px',
+                  borderRadius: '12px',
+                  textAlign: 'center',
+                  backgroundColor: isNext ? 'rgba(212, 175, 55, 0.22)' : 'var(--bg-input)',
+                  border: isNext ? '1px solid var(--gold-accent)' : '1px solid var(--border-color)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: isNext ? 'var(--gold-accent)' : 'var(--text-muted)' }}>
+                  {item.name}
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: isNext ? '#ffffff' : 'var(--text-main)', marginTop: '4px' }}>
+                  {item.time}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Ayat Pilihan Hari Ini */}
       <div
         className="glass-panel"
         onClick={() => onOpenSurah(featuredVerse.surahNumber)}
@@ -313,7 +417,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backgroundColor: 'rgba(0, 0, 0, 0.78)',
             backdropFilter: 'blur(8px)',
             zIndex: 100,
             display: 'flex',
