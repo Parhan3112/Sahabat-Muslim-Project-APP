@@ -47,13 +47,13 @@ export const apiService = {
     return json.user;
   },
 
-  // 4. Al-Qur'an (With Direct EQuran API Fallback)
+  // 4. Al-Qur'an (With Normalized Direct EQuran API Fallback)
   async getAllSurahs() {
     try {
       const res = await fetch(`${API_BASE_URL}/quran/surah`);
       if (res.ok) {
         const json = await res.json();
-        if (json.data) return json.data;
+        if (json.data && Array.isArray(json.data) && json.data.length > 0) return json.data;
       }
     } catch (_e) {
       // fallback
@@ -61,7 +61,15 @@ export const apiService = {
 
     const fallbackRes = await fetch('https://equran.id/api/v2/surat');
     const fallbackJson = await fallbackRes.json();
-    return fallbackJson.data;
+    const list = fallbackJson.data || [];
+
+    return list.map((item: any) => ({
+      number: item.number || item.nomor,
+      nameLatin: item.nameLatin || item.namaLatin,
+      nameArabic: item.nameArabic || item.nama,
+      numberOfVerses: item.numberOfVerses || item.jumlahAyat,
+      translation: item.translation || item.arti,
+    }));
   },
 
   async getSurahDetail(surahNumber: number) {
@@ -77,7 +85,26 @@ export const apiService = {
 
     const fallbackRes = await fetch(`https://equran.id/api/v2/surat/${surahNumber}`);
     const fallbackJson = await fallbackRes.json();
-    return fallbackJson.data;
+    const d = fallbackJson.data;
+
+    if (!d) return null;
+
+    const verses = (d.ayat || d.verses || []).map((v: any) => ({
+      verseNumber: v.verseNumber || v.nomorAyat,
+      textArabic: v.textArabic || v.teksArab,
+      textLatin: v.textLatin || v.teksLatin,
+      translation: v.translation || v.teksIndonesia,
+      audioUrl: v.audioUrl || v.audio?.['05'] || v.audio?.['01'] || '',
+    }));
+
+    return {
+      number: d.number || d.nomor,
+      nameLatin: d.nameLatin || d.namaLatin,
+      nameArabic: d.nameArabic || d.nama,
+      numberOfVerses: d.numberOfVerses || d.jumlahAyat,
+      translation: d.translation || d.arti,
+      verses,
+    };
   },
 
   // 5. Prayer Times (With Direct Aladhan API Fallback)
