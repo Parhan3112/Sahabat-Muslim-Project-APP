@@ -1,4 +1,4 @@
-import { DZIKIR_PAGI_LIST, DZIKIR_PETANG_LIST, DOA_HARIAN_LIST } from '../../../backend/src/modules/dzikir/dzikir.data';
+import { DZIKIR_PAGI_LIST, DZIKIR_PETANG_LIST, DOA_HARIAN_LIST } from '../data/dzikir.data';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api/v1';
 
