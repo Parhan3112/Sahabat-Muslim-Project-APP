@@ -4,15 +4,13 @@ import { prisma } from './config/database.js';
 
 const app = buildApp();
 
-async function startServer() {
-  try {
-    await app.listen({ port: env.PORT, host: env.HOST });
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  app.listen({ port: env.PORT, host: env.HOST }).then(() => {
     console.log(`🚀 Sahabat Muslim API Server running at http://${env.HOST}:${env.PORT}`);
-    console.log(`🏥 Health Check endpoint available at http://${env.HOST}:${env.PORT}/api/v1/health`);
-  } catch (err) {
+  }).catch((err) => {
     app.log.error(err);
     process.exit(1);
-  }
+  });
 }
 
 // Graceful Shutdown
@@ -26,4 +24,7 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-startServer();
+export default async (req: any, res: any) => {
+  await app.ready();
+  app.server.emit('request', req, res);
+};
