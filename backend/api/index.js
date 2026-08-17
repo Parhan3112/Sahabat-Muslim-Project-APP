@@ -1,21 +1,21 @@
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json');
-
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 200;
-    return res.end();
-  }
-
-  const url = req.url || '';
-
   try {
-    // 1. Quran Surah List
-    if (url.includes('/quran/surah/') || (url.includes('/quran/surah') && url.split('/quran/surah')[1].length > 1)) {
-      const parts = url.split('/quran/surah/')[1];
-      const num = parts ? parts.split('?')[0] : '1';
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Content-Type', 'application/json');
+
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 200;
+      return res.end();
+    }
+
+    const url = req.url || '';
+
+    // 1. Quran Detail: /api/v1/quran/surah/:num
+    if (url.includes('/quran/surah/')) {
+      const parts = url.split('/quran/surah/')[1] || '';
+      const num = parts.split('?')[0] || '1';
       const qRes = await fetch(`https://equran.id/api/v2/surat/${num}`);
       const qJson = await qRes.json();
       const d = qJson.data;
@@ -23,6 +23,7 @@ export default async function handler(req, res) {
         res.statusCode = 404;
         return res.end(JSON.stringify({ error: 'Surah not found' }));
       }
+      res.statusCode = 200;
       return res.end(
         JSON.stringify({
           data: {
@@ -43,10 +44,12 @@ export default async function handler(req, res) {
       );
     }
 
+    // 2. Quran Surah List: /api/v1/quran/surah
     if (url.includes('/quran/surah')) {
       const qRes = await fetch('https://equran.id/api/v2/surat');
       const qJson = await qRes.json();
       const list = qJson.data || [];
+      res.statusCode = 200;
       return res.end(
         JSON.stringify({
           data: list.map((item) => ({
@@ -60,7 +63,7 @@ export default async function handler(req, res) {
       );
     }
 
-    // 2. Health Check
+    // 3. Health Check
     res.statusCode = 200;
     return res.end(
       JSON.stringify({
@@ -71,6 +74,6 @@ export default async function handler(req, res) {
     );
   } catch (err) {
     res.statusCode = 500;
-    return res.end(JSON.stringify({ error: err.message }));
+    return res.end(JSON.stringify({ error: err?.message || 'Internal Error' }));
   }
 }
