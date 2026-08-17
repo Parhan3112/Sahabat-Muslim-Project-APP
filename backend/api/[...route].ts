@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   try {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
       const parts = url.split('/quran/surah/')[1] || '';
       const num = parts.split('?')[0] || '1';
       const qRes = await fetch(`https://equran.id/api/v2/surat/${num}`);
-      const qJson = await qRes.json();
+      const qJson = (await qRes.json()) as any;
       const d = qJson.data;
       if (!d) {
         res.statusCode = 404;
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
             nameArabic: d.nama,
             numberOfVerses: d.jumlahAyat,
             translation: d.arti,
-            verses: (d.ayat || []).map((v) => ({
+            verses: (d.ayat || []).map((v: any) => ({
               verseNumber: v.nomorAyat,
               textArabic: v.teksArab,
               textLatin: v.teksLatin,
@@ -47,12 +47,12 @@ export default async function handler(req, res) {
     // 2. Quran Surah List: /api/v1/quran/surah
     if (url.includes('/quran/surah')) {
       const qRes = await fetch('https://equran.id/api/v2/surat');
-      const qJson = await qRes.json();
+      const qJson = (await qRes.json()) as any;
       const list = qJson.data || [];
       res.statusCode = 200;
       return res.end(
         JSON.stringify({
-          data: list.map((item) => ({
+          data: list.map((item: any) => ({
             number: item.nomor,
             nameLatin: item.namaLatin,
             nameArabic: item.nama,
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
         timestamp: new Date().toISOString(),
       })
     );
-  } catch (err) {
+  } catch (err: any) {
     res.statusCode = 500;
     return res.end(JSON.stringify({ error: err?.message || 'Internal Error' }));
   }
