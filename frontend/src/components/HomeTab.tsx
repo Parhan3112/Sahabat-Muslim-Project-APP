@@ -21,9 +21,22 @@ export const HomeTab: React.FC<HomeTabProps> = ({
   currentLocation,
   onLocationChange,
 }) => {
-  const [todayPrayer, setTodayPrayer] = useState<any>(null);
+  const [todayPrayer, setTodayPrayer] = useState<any>({
+    date: {
+      masehi: 'Senin, 17 Agustus 2026',
+      hijriah: '29 Safar 1448 H',
+      fullFormatted: 'Senin, 17 Agustus 2026 • 29 Safar 1448 H',
+    },
+    timings: {
+      subuh: '04:35',
+      dzuhur: '12:00',
+      ashar: '15:18',
+      maghrib: '18:02',
+      isya: '19:12',
+    },
+  });
   const [nextPrayerName, setNextPrayerName] = useState<string>('Subuh');
-  const [nextPrayerTime, setNextPrayerTime] = useState<string>('--:--');
+  const [nextPrayerTime, setNextPrayerTime] = useState<string>('04:35');
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [audioObj, setAudioObj] = useState<HTMLAudioElement | null>(null);
   const [showLocationModal, setShowLocationModal] = useState<boolean>(false);
@@ -31,8 +44,23 @@ export const HomeTab: React.FC<HomeTabProps> = ({
   const [gpsError, setGpsError] = useState<string>('');
 
   // Live Digital Clock state (HH:mm:ss WIB)
-  const [currentTimeStr, setCurrentTimeStr] = useState<string>('');
-  const [currentDateStr, setCurrentDateStr] = useState<string>('');
+  const [currentTimeStr, setCurrentTimeStr] = useState<string>(() => {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    return `${h}:${m}:${s} WIB`;
+  });
+
+  const [currentDateStr, setCurrentDateStr] = useState<string>(() => {
+    const now = new Date();
+    const DAYS_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const MONTHS_ID = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return `${DAYS_ID[now.getDay()]}, ${now.getDate()} ${MONTHS_ID[now.getMonth()]} ${now.getFullYear()}`;
+  });
 
   const featuredVerse = getDailyFeaturedVerse();
 
@@ -40,25 +68,17 @@ export const HomeTab: React.FC<HomeTabProps> = ({
   useEffect(() => {
     const updateClock = () => {
       const now = new Date();
-
-      // Format HH:mm:ss WIB
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
       setCurrentTimeStr(`${hours}:${minutes}:${seconds} WIB`);
 
-      // Format Indonesian Date (e.g. "Senin, 17 Agustus 2026")
       const DAYS_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
       const MONTHS_ID = [
         'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
       ];
-      const dayName = DAYS_ID[now.getDay()];
-      const dayNum = now.getDate();
-      const monthName = MONTHS_ID[now.getMonth()];
-      const yearNum = now.getFullYear();
-
-      const masehiStr = `${dayName}, ${dayNum} ${monthName} ${yearNum}`;
+      const masehiStr = `${DAYS_ID[now.getDay()]}, ${now.getDate()} ${MONTHS_ID[now.getMonth()]} ${now.getFullYear()}`;
       setCurrentDateStr(masehiStr);
     };
 
@@ -74,7 +94,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
     async function loadPrayer() {
       try {
         const res = await apiService.getTodayPrayerTimes(currentLocation.lat, currentLocation.lng);
-        if (isSubscribed) {
+        if (isSubscribed && res) {
           setTodayPrayer(res);
           determineNextPrayer(res.timings);
         }
@@ -96,17 +116,20 @@ export const HomeTab: React.FC<HomeTabProps> = ({
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     const parseTime = (timeStr: string) => {
-      if (!timeStr) return 0;
-      const [h, m] = timeStr.split(':').map(Number);
+      if (!timeStr || typeof timeStr !== 'string') return 0;
+      const parts = timeStr.split(':');
+      if (parts.length < 2) return 0;
+      const h = parseInt(parts[0], 10) || 0;
+      const m = parseInt(parts[1], 10) || 0;
       return h * 60 + m;
     };
 
     const prayerList = [
-      { name: 'Subuh', time: timings.subuh },
-      { name: 'Dzuhur', time: timings.dzuhur },
-      { name: 'Ashar', time: timings.ashar },
-      { name: 'Maghrib', time: timings.maghrib },
-      { name: 'Isya', time: timings.isya },
+      { name: 'Subuh', time: timings?.subuh || timings?.Fajr || '04:35' },
+      { name: 'Dzuhur', time: timings?.dzuhur || timings?.Dhuhr || '12:00' },
+      { name: 'Ashar', time: timings?.ashar || timings?.Asr || '15:18' },
+      { name: 'Maghrib', time: timings?.maghrib || timings?.Maghrib || '18:02' },
+      { name: 'Isya', time: timings?.isya || timings?.Isha || '19:12' },
     ];
 
     for (const p of prayerList) {
@@ -118,7 +141,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
     }
 
     setNextPrayerName('Subuh (Besok)');
-    setNextPrayerTime(timings.subuh || '04:35');
+    setNextPrayerTime(prayerList[0].time);
   };
 
   const toggleFeaturedAudio = (e: React.MouseEvent) => {
@@ -165,7 +188,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
   };
 
   const displayDateHeader = todayPrayer?.date?.fullFormatted ||
-    (todayPrayer?.date?.hijriah ? `${currentDateStr} • ${todayPrayer.date.hijriah}` : currentDateStr);
+    (todayPrayer?.date?.hijriah ? `${currentDateStr} • ${todayPrayer.date.hijriah}` : `${currentDateStr} • 29 Safar 1448 H`);
 
   const POPULAR_SURAHS = [
     { number: 1, nameLatin: 'Al-Fatihah', nameArabic: 'الفاتحة', verses: 7, meaning: 'Pembukaan' },
@@ -231,7 +254,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               Jadwal Sholat & Waktu Realtime ⏱️
             </span>
             <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ffffff', backgroundColor: 'rgba(212, 175, 55, 0.25)', padding: '4px 10px', borderRadius: '12px', border: '1px solid var(--gold-accent)' }}>
-              {currentTimeStr || 'Memuat Jam...'}
+              {currentTimeStr}
             </div>
           </div>
 
@@ -263,11 +286,11 @@ export const HomeTab: React.FC<HomeTabProps> = ({
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
           {[
-            { name: 'Subuh', time: todayPrayer?.timings?.subuh || '04:35' },
-            { name: 'Dzuhur', time: todayPrayer?.timings?.dzuhur || '12:00' },
-            { name: 'Ashar', time: todayPrayer?.timings?.ashar || '15:15' },
-            { name: 'Maghrib', time: todayPrayer?.timings?.maghrib || '18:05' },
-            { name: 'Isya', time: todayPrayer?.timings?.isya || '19:15' },
+            { name: 'Subuh', time: todayPrayer?.timings?.subuh || todayPrayer?.timings?.Fajr || '04:35' },
+            { name: 'Dzuhur', time: todayPrayer?.timings?.dzuhur || todayPrayer?.timings?.Dhuhr || '12:00' },
+            { name: 'Ashar', time: todayPrayer?.timings?.ashar || todayPrayer?.timings?.Asr || '15:15' },
+            { name: 'Maghrib', time: todayPrayer?.timings?.maghrib || todayPrayer?.timings?.Maghrib || '18:02' },
+            { name: 'Isya', time: todayPrayer?.timings?.isya || todayPrayer?.timings?.Isha || '19:12' },
           ].map((item) => {
             const isNext = item.name === nextPrayerName || (nextPrayerName.startsWith('Subuh') && item.name === 'Subuh');
             return (
