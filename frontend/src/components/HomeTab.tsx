@@ -167,6 +167,15 @@ export const HomeTab: React.FC<HomeTabProps> = ({
   const displayDateHeader = todayPrayer?.date?.fullFormatted ||
     (todayPrayer?.date?.hijriah ? `${currentDateStr} • ${todayPrayer.date.hijriah}` : currentDateStr);
 
+  const POPULAR_SURAHS = [
+    { number: 1, nameLatin: 'Al-Fatihah', nameArabic: 'الفاتحة', verses: 7, meaning: 'Pembukaan' },
+    { number: 36, nameLatin: 'Yasin', nameArabic: 'يس', verses: 83, meaning: 'Yasin' },
+    { number: 18, nameLatin: 'Al-Kahf', nameArabic: 'الكهف', verses: 110, meaning: 'Gua' },
+    { number: 67, nameLatin: 'Al-Mulk', nameArabic: 'الملك', verses: 30, meaning: 'Kerajaan' },
+    { number: 55, nameLatin: 'Ar-Rahman', nameArabic: 'الرحمن', verses: 78, meaning: 'Yang Maha Pemurah' },
+    { number: 56, nameLatin: 'Al-Waqi\'ah', nameArabic: 'الواقعة', verses: 96, meaning: 'Hari Kiamat' },
+  ];
+
   return (
     <div style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Top Header with Live Realtime Date */}
@@ -237,7 +246,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
         </div>
       </div>
 
-      {/* Full 5-Prayer Timetable Grid Card (Sleek & Immediate) */}
+      {/* Full 5-Prayer Timetable Grid Card */}
       <div className="glass-panel" style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--gold-accent)' }}>
@@ -282,6 +291,114 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Quick Access Menu Grid (4 Cards) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+        <div
+          className="glass-card"
+          onClick={() => onNavigate('quran')}
+          style={{ padding: '14px 8px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
+        >
+          <div style={{ backgroundColor: 'rgba(212, 175, 55, 0.15)', padding: '8px', borderRadius: '14px', color: 'var(--gold-accent)' }}>
+            <BookOpen size={20} />
+          </div>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Al-Qur'an</span>
+        </div>
+
+        <div
+          className="glass-card"
+          onClick={() => onNavigate('dzikir')}
+          style={{ padding: '14px 8px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
+        >
+          <div style={{ backgroundColor: 'rgba(212, 175, 55, 0.15)', padding: '8px', borderRadius: '14px', color: 'var(--gold-accent)' }}>
+            <HeartHandshake size={20} />
+          </div>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Dzikir & Doa</span>
+        </div>
+
+        <div
+          className="glass-card"
+          onClick={onOpenMosquesModal}
+          style={{ padding: '14px 8px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
+        >
+          <div style={{ backgroundColor: 'rgba(212, 175, 55, 0.15)', padding: '8px', borderRadius: '14px', color: 'var(--gold-accent)' }}>
+            <MapPin size={20} />
+          </div>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Masjid</span>
+        </div>
+
+        <div
+          className="glass-card"
+          onClick={() => onNavigate('qibla')}
+          style={{ padding: '14px 8px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
+        >
+          <div style={{ backgroundColor: 'rgba(212, 175, 55, 0.15)', padding: '8px', borderRadius: '14px', color: 'var(--gold-accent)' }}>
+            <Compass size={20} />
+          </div>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Kiblat</span>
+        </div>
+      </div>
+
+      {/* Surah Pilihan / Akses Cepat Al-Qur'an 📖 (Langsung Tampil di Beranda) */}
+      <div className="glass-panel" style={{ padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--gold-accent)', fontWeight: 800, fontSize: '0.88rem' }}>
+            <BookOpen size={16} />
+            <span>Baca Al-Qur'an 30 Juz (Surah Pilihan)</span>
+          </div>
+          <button
+            onClick={() => onNavigate('quran')}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
+          >
+            <span>Semua 114 Surah</span>
+            <ChevronRight size={13} />
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+          {POPULAR_SURAHS.map((s) => (
+            <div
+              key={s.number}
+              className="glass-card"
+              onClick={() => onOpenSurah(s.number)}
+              style={{
+                padding: '10px 12px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div
+                  style={{
+                    backgroundColor: 'rgba(212, 175, 55, 0.15)',
+                    color: 'var(--gold-accent)',
+                    fontWeight: 800,
+                    fontSize: '0.75rem',
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {s.number}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.82rem' }}>{s.nameLatin}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{s.verses} Ayat</div>
+                </div>
+              </div>
+
+              <div className="font-arabic" style={{ fontSize: '1.05rem', color: 'var(--gold-accent)' }}>
+                {s.nameArabic}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -358,53 +475,6 @@ export const HomeTab: React.FC<HomeTabProps> = ({
             <span>Baca Surat Ini</span>
             <ChevronRight size={14} />
           </div>
-        </div>
-      </div>
-
-      {/* Quick Access Menu Grid (4 Cards) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-        <div
-          className="glass-card"
-          onClick={() => onNavigate('quran')}
-          style={{ padding: '14px 8px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
-        >
-          <div style={{ backgroundColor: 'rgba(212, 175, 55, 0.15)', padding: '8px', borderRadius: '14px', color: 'var(--gold-accent)' }}>
-            <BookOpen size={20} />
-          </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Al-Qur'an</span>
-        </div>
-
-        <div
-          className="glass-card"
-          onClick={() => onNavigate('dzikir')}
-          style={{ padding: '14px 8px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
-        >
-          <div style={{ backgroundColor: 'rgba(212, 175, 55, 0.15)', padding: '8px', borderRadius: '14px', color: 'var(--gold-accent)' }}>
-            <HeartHandshake size={20} />
-          </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Dzikir & Doa</span>
-        </div>
-
-        <div
-          className="glass-card"
-          onClick={onOpenMosquesModal}
-          style={{ padding: '14px 8px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
-        >
-          <div style={{ backgroundColor: 'rgba(212, 175, 55, 0.15)', padding: '8px', borderRadius: '14px', color: 'var(--gold-accent)' }}>
-            <MapPin size={20} />
-          </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Masjid</span>
-        </div>
-
-        <div
-          className="glass-card"
-          onClick={() => onNavigate('qibla')}
-          style={{ padding: '14px 8px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
-        >
-          <div style={{ backgroundColor: 'rgba(212, 175, 55, 0.15)', padding: '8px', borderRadius: '14px', color: 'var(--gold-accent)' }}>
-            <Compass size={20} />
-          </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Kiblat</span>
         </div>
       </div>
 
