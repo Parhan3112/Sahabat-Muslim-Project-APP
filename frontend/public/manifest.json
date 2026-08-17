@@ -1,0 +1,24 @@
+{
+  "short_name": "Sahabat Muslim",
+  "name": "Sahabat Muslim - Al-Qur'an, Sholat, Dzikir & Kiblat",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#052e16",
+  "theme_color": "#0f5132",
+  "display": "standalone",
+  "orientation": "portrait",
+  "description": "Aplikasi Islami Lengkap Sahabat Muslim: Al-Qur'an 30 Juz, Jadwal Sholat Kemenag RI, Dzikir Pagi Petang Al-Matsurat, Kompas Kiblat, dan Peta Masjid Terdekat."
+}

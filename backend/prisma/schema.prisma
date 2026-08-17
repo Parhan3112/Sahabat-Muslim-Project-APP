@@ -1,0 +1,91 @@
+// Prisma Schema - Sahabat Muslim Backend
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookmarks            Bookmark[]
+  readingProgress      ReadingProgress?
+  notificationSetting  NotificationSetting?
+  userSettings         UserSettings?
+
+  @@map("users")
+}
+
+model Bookmark {
+  id             String   @id @default(uuid())
+  userId         String
+  surahNumber    Int
+  verseNumber    Int
+  surahNameLatin String
+  note           String?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, surahNumber, verseNumber])
+  @@map("bookmarks")
+}
+
+model ReadingProgress {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  lastSurahNumber        Int      @default(1)
+  lastVerseNumber        Int      @default(1)
+  lastSurahNameLatin     String   @default("Al-Fatihah")
+  currentSurahTotalVerses Int      @default(7)
+  dailyVerseTarget       Int      @default(30)
+  totalVersesRead        Int      @default(0)
+  targetKhatamDays       Int      @default(30)
+  updatedAt              DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reading_progress")
+}
+
+model NotificationSetting {
+  id                      String   @id @default(uuid())
+  userId                  String   @unique
+  enableSubuh             Boolean  @default(true)
+  enableDzuhur            Boolean  @default(true)
+  enableAshar             Boolean  @default(true)
+  enableMaghrib           Boolean  @default(true)
+  enableIsya              Boolean  @default(true)
+  enableDailyQuranReminder Boolean  @default(true)
+  reminderTime            String   @default("20:00")
+  updatedAt               DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_settings")
+}
+
+model UserSettings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  arabicFontSize      Int      @default(28)
+  translationFontSize Int      @default(14)
+  showTranslation     Boolean  @default(true)
+  showLatin           Boolean  @default(true)
+  audioReciter        String   @default("alafasy")
+  theme               String   @default("dark")
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
